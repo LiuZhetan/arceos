@@ -19,6 +19,8 @@ macro_rules! println {
 }
 ```
 
+![img](imgs/exercise1.png)
+
 #### 练习2 实现HashMap
 
 剪切标准HashMap的代码至不到300行，主要的问题是要重写标准库HashMap中的new函数，这里使用到了给出的随机数生成代码：
@@ -78,3 +80,4 @@ pub mod collections {
     pub use crate::hash_map::HashMap;
 }
 ```
+![img](imgs/exercise2.png)
