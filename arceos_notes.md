@@ -80,4 +80,5 @@ pub mod collections {
     pub use crate::hash_map::HashMap;
 }
 ```
+
 ![img](imgs/exercise2.png)

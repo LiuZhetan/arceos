@@ -26,6 +26,7 @@ buddy_system_allocator = { version = "0.9", default-features = false, optional =
 slab_allocator = { path = "../slab_allocator", optional = true }
 rlsf = { version = "0.2", optional = true }
 bitmap-allocator = { git = "https://github.com/rcore-os/bitmap-allocator.git", rev = "88e871a", optional = true }
+log = "0.4"
 
 [dev-dependencies]
 allocator = { path = ".", features = ["full"] }
