@@ -156,8 +156,6 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     }
     info!("============================================");
 
-    parse_dtb(dtb.into());
-
     #[cfg(feature = "paging")]
     {
         info!("Initialize kernel page table...");
