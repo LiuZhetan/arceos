@@ -1,5 +1,5 @@
 extern crate alloc;
-use log::debug;
+use log::{debug, warn};
 
 use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator, PageAllocator};
 use core::alloc::Layout;
@@ -52,14 +52,25 @@ impl<const PAGE_SIZE: usize> ByteAllocator for EarlyAllocator<PAGE_SIZE> {
             let ptr = NonNull::new((self.start_va + self.byte_index) as *mut u8).unwrap();
             self.byte_index += layout.size();
             self.byte_used += layout.size();
+            /*debug!(
+                "Allocate bytes Ok: start:{:#x}, size:{:#x}", 
+                self.start_va + self.byte_index, 
+                layout.size()
+            );*/
             Ok(ptr)
         }
         else {
+            warn!("Allocate bytes failed:NoMemory");
             Err(AllocError::NoMemory)
         }
     }
 
     fn dealloc(&mut self, pos: NonNull<u8>, layout: Layout) {
+        /*debug!(
+            "Deallocate bytes Ok: start:{:#x}, size:{:#x}", 
+            pos.as_ptr() as usize, 
+            layout.size()
+        );*/
         self.byte_used -= layout.size();
         if self.byte_used == 0 {
             self.byte_index = 0
@@ -84,10 +95,12 @@ impl<const PAGE_SIZE: usize> PageAllocator for EarlyAllocator<PAGE_SIZE> {
 
     fn alloc_pages(&mut self, num_pages: usize, align_pow2: usize) -> AllocResult<usize> {
         if align_pow2 % PAGE_SIZE != 0 {
+            warn!("Allocate pages failed:InvalidParam");
             return Err(AllocError::InvalidParam);
         }
         let align_pow2 = align_pow2 / PAGE_SIZE;
         if !align_pow2.is_power_of_two() {
+            warn!("Allocate pages failed:InvalidParam");
             return Err(AllocError::InvalidParam);
         }
         let alloc_num = num_pages.max(align_pow2);
@@ -95,9 +108,15 @@ impl<const PAGE_SIZE: usize> PageAllocator for EarlyAllocator<PAGE_SIZE> {
             // update page_used and page_index
             self.page_used += alloc_num;
             self.page_index -= alloc_num * PAGE_SIZE;
+            /*debug!(
+                "Allocate Pages Ok: start:{:#x}, page_num:{:#x}", 
+                self.start_va + self.page_index, 
+                alloc_num
+            );*/
             Ok(self.start_va + self.page_index)
         }
         else {
+            warn!("Allocate pages failed: NoMemory");
             Err(AllocError::NoMemory)
         }
     }

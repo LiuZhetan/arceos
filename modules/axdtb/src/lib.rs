@@ -25,7 +25,7 @@ pub struct DtbInfo {
 
 pub fn parse_dtb(address:usize) -> Result<DtbInfo, &'static str>{
     let reader = unsafe { Reader::read_from_address(address).unwrap() };
-    for entry in reader.reserved_mem_entries() {
+    /*for entry in reader.reserved_mem_entries() {
         debug!("reserved: {:?} bytes at {:?}", entry.size, entry.address);
     }
     let mut indent = 0;
@@ -43,7 +43,7 @@ pub fn parse_dtb(address:usize) -> Result<DtbInfo, &'static str>{
                 debug!("{:indent$}{}: {:?}", "", name, value, indent = indent)
             }
         }
-    }
+    }*/
     let root = reader.struct_items();
     let (prop, _) = 
         root.path_struct_items("/memory/reg").next().unwrap();

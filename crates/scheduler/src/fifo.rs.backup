@@ -1,5 +1,5 @@
 use alloc::sync::Arc;
-use core::{ops::Deref, sync::atomic::{AtomicIsize, Ordering}};
+use core::ops::Deref;
 
 use linked_list::{Adapter, Links, List};
 
@@ -8,13 +8,12 @@ use crate::BaseScheduler;
 /// A task wrapper for the [`FifoScheduler`].
 ///
 /// It add extra states to use in [`linked_list::List`].
-pub struct FifoTask<T, const MAX_TIME_SLICE: usize> {
+pub struct FifoTask<T> {
     inner: T,
     links: Links<Self>,
-    time_slice: AtomicIsize,
 }
 
-unsafe impl<T, const S: usize> Adapter for FifoTask<T, S> {
+unsafe impl<T> Adapter for FifoTask<T> {
     type EntryType = Self;
 
     #[inline]
@@ -23,13 +22,12 @@ unsafe impl<T, const S: usize> Adapter for FifoTask<T, S> {
     }
 }
 
-impl<T, const S: usize> FifoTask<T, S> {
+impl<T> FifoTask<T> {
     /// Creates a new [`FifoTask`] from the inner task struct.
     pub const fn new(inner: T) -> Self {
         Self {
             inner,
             links: Links::new(),
-            time_slice: AtomicIsize::new(S as isize),
         }
     }
 
@@ -39,7 +37,7 @@ impl<T, const S: usize> FifoTask<T, S> {
     }
 }
 
-impl<T, const S: usize> Deref for FifoTask<T, S> {
+impl<T> Deref for FifoTask<T> {
     type Target = T;
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -56,11 +54,11 @@ impl<T, const S: usize> Deref for FifoTask<T, S> {
 /// As it's a cooperative scheduler, it does nothing when the timer tick occurs.
 ///
 /// It internally uses a linked list as the ready queue.
-pub struct FifoScheduler<T, const MAX_TIME_SLICE: usize> {
-    ready_queue: List<Arc<FifoTask<T, MAX_TIME_SLICE>>>,
+pub struct FifoScheduler<T> {
+    ready_queue: List<Arc<FifoTask<T>>>,
 }
 
-impl<T, const S: usize> FifoScheduler<T, S>  {
+impl<T> FifoScheduler<T> {
     /// Creates a new empty [`FifoScheduler`].
     pub const fn new() -> Self {
         Self {
@@ -73,8 +71,8 @@ impl<T, const S: usize> FifoScheduler<T, S>  {
     }
 }
 
-impl<T, const S: usize> BaseScheduler for FifoScheduler<T, S> {
-    type SchedItem = Arc<FifoTask<T,S>>;
+impl<T> BaseScheduler for FifoScheduler<T> {
+    type SchedItem = Arc<FifoTask<T>>;
 
     fn init(&mut self) {}
 
@@ -95,8 +93,7 @@ impl<T, const S: usize> BaseScheduler for FifoScheduler<T, S> {
     }
 
     fn task_tick(&mut self, _current: &Self::SchedItem) -> bool {
-        let old_slice = _current.time_slice.fetch_sub(1, Ordering::Release);
-        old_slice <= 1
+        false // no reschedule
     }
 
     fn set_priority(&mut self, _task: &Self::SchedItem, _prio: isize) -> bool {
