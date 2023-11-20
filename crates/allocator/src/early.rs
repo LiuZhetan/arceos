@@ -47,7 +47,7 @@ impl<const PAGE_SIZE: usize> BaseAllocator for EarlyAllocator<PAGE_SIZE> {
 
 impl<const PAGE_SIZE: usize> ByteAllocator for EarlyAllocator<PAGE_SIZE> {
     fn alloc(&mut self, layout: Layout) -> AllocResult<NonNull<u8>> {
-        let layout = layout.pad_to_align();
+        /*let layout = layout.pad_to_align();
         if self.byte_index + layout.size() < self.page_index {
             let ptr = NonNull::new((self.start_va + self.byte_index) as *mut u8).unwrap();
             self.byte_index += layout.size();
@@ -62,15 +62,45 @@ impl<const PAGE_SIZE: usize> ByteAllocator for EarlyAllocator<PAGE_SIZE> {
         else {
             warn!("Allocate bytes failed:NoMemory");
             Err(AllocError::NoMemory)
+        }*/
+
+        debug!("Allocate bytes, Layout.size:{:#x}, layout.align:{}", layout.size(),layout.align());
+        let raw_addres = self.start_va + self.byte_index;
+        let mod_res = raw_addres % layout.align();
+        let address_align = if mod_res == 0 {
+            raw_addres
+        }
+        else {
+            raw_addres + layout.align() - mod_res
+        };
+        let layout = layout.pad_to_align();
+        debug!("Padding addres, raw_address:{:#x}, addr_align:{:#x}, align:{}", raw_addres, address_align, layout.align());
+        let size_need = layout.size() + address_align - raw_addres;
+        let end_addr = address_align + layout.size();
+        if end_addr < self.start_va + self.page_index {
+            let ptr = NonNull::new((address_align) as *mut u8).unwrap();
+            debug!(
+                "Allocate bytes Ok: [{:#x},{:#x}], size:{:#x}", 
+                address_align, 
+                end_addr,
+                size_need
+            );
+            self.byte_index += size_need;
+            self.byte_used += size_need;
+            Ok(ptr)
+        }
+        else {
+            warn!("Allocate bytes failed:NoMemory");
+            Err(AllocError::NoMemory)
         }
     }
 
     fn dealloc(&mut self, pos: NonNull<u8>, layout: Layout) {
-        /*debug!(
+        debug!(
             "Deallocate bytes Ok: start:{:#x}, size:{:#x}", 
             pos.as_ptr() as usize, 
             layout.size()
-        );*/
+        );
         self.byte_used -= layout.size();
         if self.byte_used == 0 {
             self.byte_index = 0
@@ -103,16 +133,18 @@ impl<const PAGE_SIZE: usize> PageAllocator for EarlyAllocator<PAGE_SIZE> {
             warn!("Allocate pages failed:InvalidParam");
             return Err(AllocError::InvalidParam);
         }
-        let alloc_num = num_pages.max(align_pow2);
+        let res = self.page_used + num_pages % align_pow2;
+        // let alloc_num = num_pages.max(align_pow2);
+        let alloc_num = if res == 0 {num_pages} else {align_pow2 - res + num_pages};
         if self.available_pages() >= alloc_num {
             // update page_used and page_index
             self.page_used += alloc_num;
             self.page_index -= alloc_num * PAGE_SIZE;
-            /*debug!(
+            debug!(
                 "Allocate Pages Ok: start:{:#x}, page_num:{:#x}", 
                 self.start_va + self.page_index, 
                 alloc_num
-            );*/
+            );
             Ok(self.start_va + self.page_index)
         }
         else {
