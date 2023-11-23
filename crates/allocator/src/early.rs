@@ -90,7 +90,7 @@ impl<const PAGE_SIZE: usize> ByteAllocator for EarlyAllocator<PAGE_SIZE> {
             Ok(ptr)
         }
         else {
-            warn!("Allocate bytes failed:NoMemory");
+            debug!("Allocate bytes failed:NoMemory");
             Err(AllocError::NoMemory)
         }
     }
@@ -125,15 +125,17 @@ impl<const PAGE_SIZE: usize> PageAllocator for EarlyAllocator<PAGE_SIZE> {
 
     fn alloc_pages(&mut self, num_pages: usize, align_pow2: usize) -> AllocResult<usize> {
         if align_pow2 % PAGE_SIZE != 0 {
-            warn!("Allocate pages failed:InvalidParam");
+            debug!("Allocate pages failed:InvalidParam");
             return Err(AllocError::InvalidParam);
         }
         let align_pow2 = align_pow2 / PAGE_SIZE;
         if !align_pow2.is_power_of_two() {
-            warn!("Allocate pages failed:InvalidParam");
+            debug!("Allocate pages failed:InvalidParam");
             return Err(AllocError::InvalidParam);
         }
-        let res = self.page_used + num_pages % align_pow2;
+        debug!("Allocate pages parameter, num_pages:{} align_pow2:{}", num_pages, align_pow2);
+        let res = (self.page_used + num_pages) % align_pow2;
+        debug!("Allocate pages mid result res:{}, page_used:{}", res, self.page_used);
         // let alloc_num = num_pages.max(align_pow2);
         let alloc_num = if res == 0 {num_pages} else {align_pow2 - res + num_pages};
         if self.available_pages() >= alloc_num {
@@ -148,13 +150,18 @@ impl<const PAGE_SIZE: usize> PageAllocator for EarlyAllocator<PAGE_SIZE> {
             Ok(self.start_va + self.page_index)
         }
         else {
-            warn!("Allocate pages failed: NoMemory");
+            debug!("Allocate pages failed: NoMemory");
             Err(AllocError::NoMemory)
         }
     }
 
     fn dealloc_pages(&mut self, pos: usize, num_pages: usize) {
         // TODO: not decrease `used_pages` if deallocation failed
+        debug!(
+            "Deallocate pages Ok: start:{:#x}, page num:{:#x}", 
+            pos, 
+            num_pages
+        );
         return;
     }
 
