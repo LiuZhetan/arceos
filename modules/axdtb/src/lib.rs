@@ -2,10 +2,8 @@
 
 extern crate dtb;
 extern crate log;
-extern crate alloc;
 
-use alloc::vec::Vec;
-use dtb::{Reader, StructItem};
+use dtb::Reader;
 use log::debug;
 
 fn bytes_to_num(buffer: &[u8]) -> usize {
@@ -17,10 +15,13 @@ fn bytes_to_num(buffer: &[u8]) -> usize {
     res
 }
 
+const MMIO_MAX:usize = 128;
+
 pub struct DtbInfo {
     pub memory_addr: usize,
     pub memory_size: usize,
-    pub mmio_regions: Vec<(usize,usize)>
+    pub mmio_regions: [(usize,usize);MMIO_MAX],
+    pub mmio_num:usize,
 }
 
 pub fn parse_dtb(address:usize) -> Result<DtbInfo, &'static str>{
@@ -52,7 +53,8 @@ pub fn parse_dtb(address:usize) -> Result<DtbInfo, &'static str>{
     let memory_size = bytes_to_num(&value[value.len()/2..]);
     debug!("Memory from {:x} to {:x}", memory_addr, memory_addr + memory_size);
     
-    let mut mmio_regions = Vec::new();
+    let mut mmio_regions = [(0,0);MMIO_MAX];
+    let mut mmio_num = 0;
     for (prop, prop_list) in root.path_struct_items("/soc/virtio_mmio") {
         debug!("/soc/virtio_mmio {:?}", prop.name());
         let (reg, _) = prop_list.path_struct_items("reg").next().unwrap();
@@ -60,12 +62,14 @@ pub fn parse_dtb(address:usize) -> Result<DtbInfo, &'static str>{
         let mmio_start = bytes_to_num(&reg_value[..reg_value.len()/2]);
         let mmio_len = bytes_to_num(&reg_value[reg_value.len()/2..]);
         debug!("{} start: {:x} size: {:x}", prop.name().unwrap(), mmio_start, mmio_len);
-        mmio_regions.push((mmio_start, mmio_len))
+        mmio_regions[mmio_num] = (mmio_start, mmio_len);
+        mmio_num += 1;
     }
 
     Ok(DtbInfo {
         memory_addr,
         memory_size,
         mmio_regions,
+        mmio_num,
     })
 }

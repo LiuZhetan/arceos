@@ -150,8 +150,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
 
     info!("DTB info: ==================================");
     info!("Memory: {:#x}, size: {:#x}", dtb_info.memory_addr,dtb_info.memory_size);
-    info!("Virtio_mmio[{}]:", dtb_info.mmio_regions.len());
-    for r in dtb_info.mmio_regions {
+    info!("Virtio_mmio[{}]:", dtb_info.mmio_num);
+    for i in 0..dtb_info.mmio_num {
+        let r = dtb_info.mmio_regions[i];
         info!("\t{:#x}, size: {:#x}", r.0, r.1);
     }
     info!("============================================");
@@ -205,6 +206,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         core::hint::spin_loop();
     }
 
+    #[cfg(feature = "alloc")]
     {
         let ga = axalloc::global_allocator();
         info!("Used pages {} / Used bytes {}", ga.used_pages(),

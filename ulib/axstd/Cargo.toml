@@ -29,7 +29,7 @@ fp_simd = ["axfeat/fp_simd"]
 irq = ["arceos_api/irq", "axfeat/irq"]
 
 # Memory
-alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
+alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc", "axhal", "hashbrown"]
 alloc-tlsf = ["axfeat/alloc-tlsf"]
 alloc-slab = ["axfeat/alloc-slab"]
 alloc-buddy = ["axfeat/alloc-buddy"]
@@ -74,5 +74,5 @@ arceos_api = { path = "../../api/arceos_api" }
 axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
 spinlock = { path = "../../crates/spinlock" }
-axhal = {path = "../../modules/axhal"}
-hashbrown = "0.14.2"
+axhal = {path = "../../modules/axhal", optional = true }
+hashbrown = {version = "0.14.2", optional = true}
